@@ -1,12 +1,23 @@
 {
     "name": "eShopLite",
     "image": "mcr.microsoft.com/devcontainers/dotnet",
+    "runArgs": [
+        "--name", "dotnet-devops-project-container"
+    ],
     "features": {
       "ghcr.io/devcontainers/features/dotnet:2": { "version": "9.0"},
       "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {},
       "ghcr.io/devcontainers/features/azure-cli:1": {},
-      "ghcr.io/devcontainers/features/docker-from-docker:1.3.1": {},
+      "ghcr.io/devcontainers/features/docker-from-docker:1": {},
       "ghcr.io/devcontainers/features/github-cli:1": { "version": "2" }
+    },
+    "mounts": [
+        // Mounts your Windows SSH folder to the 'vscode' user's Linux SSH directory
+        "source=${localEnv:USERPROFILE}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached"
+    ],
+    "remoteEnv": {
+        // Forwards your active local Windows SSH Agent socket down to the container
+        "SSH_AUTH_SOCK": "${localEnv:SSH_AUTH_SOCK}"
     },
     "customizations": {
         "vscode": {
