@@ -58,3 +58,11 @@ export ACR=acseshop1129911899
 az acr repository show-tags -n $ACR --repository productservice --orderby time_desc --output table
 
 az acr repository show-tags -n $ACR --repository productservice --orderby time_desc --output table
+
+------------------------------------------------------------------------------
+kubectl get pods --selector=app=productservice --watch
+echo "http://$(kubectl get services --namespace ingress-nginx ingress-nginx-controller --output jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+
+kubectl rollout undo deployment/productservice
+
+deployment.apps/productservice rolled back

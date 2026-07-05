@@ -44,7 +44,7 @@ internal static class DbInitializer
             new() { Name = "Camping Stove", Description = "This stove is perfect for cooking outdoors", Price = 49.99m, ImageUrl = "/api/product/product7.png" },
             new() { Name = "Camping Lantern", Description = "This lantern is perfect for lighting up your campsite", Price = 19.99m, ImageUrl = "/api/product/product8.png" },
             new() { Name = "Camping Tent", Description = "This tent is perfect for camping trips", Price = 99.99m, ImageUrl = "/api/product/product9.png" },
-            new Product {  Name = "Camping Tent 2", Description = "This updated tent is improved and cheaper, perfect for your next trip.", Price = 79.99m, ImageUrl = "product9.png" },
+            new Product {  Name = "Camping Tent 2", Description = "This updated tent is improved and cheaper, perfect for your next trip.", Price = 79.99m, ImageUrl = "/api/product/product9.png" },
         ];        
 
         context.AddRange(products);
