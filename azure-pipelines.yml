@@ -18,7 +18,7 @@ variables:
   tag: '$(Build.BuildId)'
   imagePullSecret: 'acseshop11299118998c54-auth'
 
-  # Agent VM image name
+  # Agent VM image names
   vmImageName: 'ubuntu-latest'
 
 
