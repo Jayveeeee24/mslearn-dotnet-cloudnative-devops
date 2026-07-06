@@ -1,0 +1,9 @@
+﻿{
+  "acceptTeeEula": true,
+  "agentId": 13,
+  "agentName": "ARTEMIS",
+  "poolId": 1,
+  "poolName": "Default",
+  "serverUrl": "https://dev.azure.com/practice-dev-organization/",
+  "workFolder": "_work"
+}

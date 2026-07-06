@@ -1,0 +1,26 @@
+﻿{
+  "build_artifactstagingdirectory": "2/a",
+  "agent_builddirectory": "2",
+  "collectionUrl": "https://dev.azure.com/practice-dev-organization/",
+  "definitionName": "Jayveeeee24.mslearn-dotnet-cloudnative-devops",
+  "repositoryTrackingInfo": [
+    {
+      "identifier": "self",
+      "repositoryType": "GitHub",
+      "repositoryUrl": "https://github.com/Jayveeeee24/mslearn-dotnet-cloudnative-devops",
+      "sourcesDirectory": "2/s/mslearn-dotnet-cloudnative-devops"
+    }
+  ],
+  "fileFormatVersion": 3,
+  "lastRunOn": "07/06/2026 03:04:03 +00:00",
+  "repositoryType": "GitHub",
+  "lastMaintenanceAttemptedOn": "",
+  "lastMaintenanceCompletedOn": "",
+  "build_sourcesdirectory": "2/s",
+  "common_testresultsdirectory": "2/TestResults",
+  "collectionId": "0ad72cdb-7a4e-46cc-95c2-85740874a4ba",
+  "definitionId": "5",
+  "hashKey": "3da786b1d8cd200eb1d6bf64be586d7260f097e3",
+  "repositoryUrl": "https://github.com/Jayveeeee24/mslearn-dotnet-cloudnative-devops",
+  "system": "build"
+}

@@ -1,0 +1,339 @@
+'use strict';
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.updateImageDetails = exports.getResources = exports.updateSelectorLabels = exports.updateSpecLabels = exports.updateImagePullSecrets = exports.updateObjectAnnotations = exports.updateObjectLabels = exports.getReplicaCount = exports.isServiceEntity = exports.isWorkloadEntity = exports.isDeploymentEntity = void 0;
+const fs = require("fs");
+const tl = require("azure-pipelines-task-lib/task");
+const yaml = require("js-yaml");
+const kubernetesconstants_1 = require("azure-pipelines-tasks-kubernetes-common/kubernetesconstants");
+const StringComparison_1 = require("../utils/StringComparison");
+function isDeploymentEntity(kind) {
+    if (!kind) {
+        throw (tl.loc('ResourceKindNotDefined'));
+    }
+    return kubernetesconstants_1.deploymentTypes.some((type) => {
+        return (0, StringComparison_1.isEqual)(type, kind, StringComparison_1.StringComparer.OrdinalIgnoreCase);
+    });
+}
+exports.isDeploymentEntity = isDeploymentEntity;
+function isWorkloadEntity(kind) {
+    if (!kind) {
+        throw (tl.loc('ResourceKindNotDefined'));
+    }
+    return kubernetesconstants_1.workloadTypes.some((type) => {
+        return (0, StringComparison_1.isEqual)(type, kind, StringComparison_1.StringComparer.OrdinalIgnoreCase);
+    });
+}
+exports.isWorkloadEntity = isWorkloadEntity;
+function isServiceEntity(kind) {
+    if (!kind) {
+        throw (tl.loc('ResourceKindNotDefined'));
+    }
+    return (0, StringComparison_1.isEqual)("Service", kind, StringComparison_1.StringComparer.OrdinalIgnoreCase);
+}
+exports.isServiceEntity = isServiceEntity;
+function getReplicaCount(inputObject) {
+    if (!inputObject) {
+        throw (tl.loc('NullInputObject'));
+    }
+    if (!inputObject.kind) {
+        throw (tl.loc('ResourceKindNotDefined'));
+    }
+    const kind = inputObject.kind;
+    if (!(0, StringComparison_1.isEqual)(kind, kubernetesconstants_1.KubernetesWorkload.pod, StringComparison_1.StringComparer.OrdinalIgnoreCase) && !(0, StringComparison_1.isEqual)(kind, kubernetesconstants_1.KubernetesWorkload.daemonSet, StringComparison_1.StringComparer.OrdinalIgnoreCase)) {
+        return inputObject.spec.replicas;
+    }
+    return 0;
+}
+exports.getReplicaCount = getReplicaCount;
+function updateObjectLabels(inputObject, newLabels, override) {
+    if (!inputObject) {
+        throw (tl.loc('NullInputObject'));
+    }
+    if (!inputObject.metadata) {
+        throw (tl.loc('NullInputObjectMetadata'));
+    }
+    if (!newLabels) {
+        return;
+    }
+    if (override) {
+        inputObject.metadata.labels = newLabels;
+    }
+    else {
+        let existingLabels = inputObject.metadata.labels;
+        if (!existingLabels) {
+            existingLabels = new Map();
+        }
+        Object.keys(newLabels).forEach(function (key) {
+            existingLabels[key] = newLabels[key];
+        });
+        inputObject.metadata.labels = existingLabels;
+    }
+}
+exports.updateObjectLabels = updateObjectLabels;
+function updateObjectAnnotations(inputObject, newAnnotations, override) {
+    if (!inputObject) {
+        throw (tl.loc('NullInputObject'));
+    }
+    if (!inputObject.metadata) {
+        throw (tl.loc('NullInputObjectMetadata'));
+    }
+    if (!newAnnotations) {
+        return;
+    }
+    if (override) {
+        inputObject.metadata.annotations = newAnnotations;
+    }
+    else {
+        let existingAnnotations = inputObject.metadata.annotations;
+        if (!existingAnnotations) {
+            existingAnnotations = new Map();
+        }
+        Object.keys(newAnnotations).forEach(function (key) {
+            existingAnnotations[key] = newAnnotations[key];
+        });
+        inputObject.metadata.annotations = existingAnnotations;
+    }
+}
+exports.updateObjectAnnotations = updateObjectAnnotations;
+function updateImagePullSecrets(inputObject, newImagePullSecrets, override) {
+    if (!inputObject || !inputObject.spec || !newImagePullSecrets) {
+        return;
+    }
+    const newImagePullSecretsObjects = Array.from(newImagePullSecrets, x => { return { 'name': x }; });
+    let existingImagePullSecretObjects = getImagePullSecrets(inputObject);
+    if (override) {
+        existingImagePullSecretObjects = newImagePullSecretsObjects;
+    }
+    else {
+        if (!existingImagePullSecretObjects) {
+            existingImagePullSecretObjects = new Array();
+        }
+        existingImagePullSecretObjects = existingImagePullSecretObjects.concat(newImagePullSecretsObjects);
+    }
+    setImagePullSecrets(inputObject, existingImagePullSecretObjects);
+}
+exports.updateImagePullSecrets = updateImagePullSecrets;
+function updateSpecLabels(inputObject, newLabels, override) {
+    if (!inputObject) {
+        throw (tl.loc('NullInputObject'));
+    }
+    if (!inputObject.kind) {
+        throw (tl.loc('ResourceKindNotDefined'));
+    }
+    if (!newLabels) {
+        return;
+    }
+    let existingLabels = getSpecLabels(inputObject);
+    if (override) {
+        existingLabels = newLabels;
+    }
+    else {
+        if (!existingLabels) {
+            existingLabels = new Map();
+        }
+        Object.keys(newLabels).forEach(function (key) {
+            existingLabels[key] = newLabels[key];
+        });
+    }
+    setSpecLabels(inputObject, existingLabels);
+}
+exports.updateSpecLabels = updateSpecLabels;
+function updateSelectorLabels(inputObject, newLabels, override) {
+    if (!inputObject) {
+        throw (tl.loc('NullInputObject'));
+    }
+    if (!inputObject.kind) {
+        throw (tl.loc('ResourceKindNotDefined'));
+    }
+    if (!newLabels) {
+        return;
+    }
+    if ((0, StringComparison_1.isEqual)(inputObject.kind, kubernetesconstants_1.KubernetesWorkload.pod, StringComparison_1.StringComparer.OrdinalIgnoreCase)) {
+        return;
+    }
+    let existingLabels = getSpecSelectorLabels(inputObject);
+    if (override) {
+        existingLabels = newLabels;
+    }
+    else {
+        if (!existingLabels) {
+            existingLabels = new Map();
+        }
+        Object.keys(newLabels).forEach(function (key) {
+            existingLabels[key] = newLabels[key];
+        });
+    }
+    setSpecSelectorLabels(inputObject, existingLabels);
+}
+exports.updateSelectorLabels = updateSelectorLabels;
+function getResources(filePaths, filterResourceTypes) {
+    if (!filePaths) {
+        return [];
+    }
+    const resources = [];
+    filePaths.forEach((filePath) => {
+        const fileContents = fs.readFileSync(filePath);
+        yaml.safeLoadAll(fileContents, function (inputObject) {
+            const inputObjectKind = inputObject ? inputObject.kind : '';
+            let isStrategyRollingUpdate = true;
+            if (kubernetesconstants_1.workloadTypesWithRolloutStatus.indexOf(inputObjectKind.toLowerCase()) >= 0) {
+                let inputObjectStrategyType = '';
+                if (inputObject && inputObject.spec && inputObject.spec.updateStrategy) {
+                    inputObjectStrategyType = inputObject.spec.updateStrategy.type;
+                }
+                else {
+                    inputObjectStrategyType = "RollingUpdate";
+                }
+                // Check for unsupported updateStrategy for rollout status
+                if (!(0, StringComparison_1.isEqual)(inputObjectStrategyType, "RollingUpdate", StringComparison_1.StringComparer.OrdinalIgnoreCase)) {
+                    isStrategyRollingUpdate = false;
+                }
+            }
+            if (filterResourceTypes.filter(type => (0, StringComparison_1.isEqual)(inputObjectKind, type, StringComparison_1.StringComparer.OrdinalIgnoreCase)).length > 0) {
+                const resource = {
+                    type: inputObject.kind,
+                    name: inputObject.metadata.name,
+                    isStrategyRollingUpdate: isStrategyRollingUpdate
+                };
+                resources.push(resource);
+            }
+        });
+    });
+    return resources;
+}
+exports.getResources = getResources;
+function getSpecLabels(inputObject) {
+    if (!inputObject) {
+        return null;
+    }
+    if ((0, StringComparison_1.isEqual)(inputObject.kind, kubernetesconstants_1.KubernetesWorkload.pod, StringComparison_1.StringComparer.OrdinalIgnoreCase)) {
+        return inputObject.metadata.labels;
+    }
+    if (!!inputObject.spec && !!inputObject.spec.template && !!inputObject.spec.template.metadata) {
+        return inputObject.spec.template.metadata.labels;
+    }
+    return null;
+}
+function getImagePullSecrets(inputObject) {
+    if (!inputObject || !inputObject.spec) {
+        return null;
+    }
+    if ((0, StringComparison_1.isEqual)(inputObject.kind, kubernetesconstants_1.KubernetesWorkload.cronjob, StringComparison_1.StringComparer.OrdinalIgnoreCase)) {
+        try {
+            return inputObject.spec.jobTemplate.spec.template.spec.imagePullSecrets;
+        }
+        catch (ex) {
+            tl.debug(`Fetching imagePullSecrets failed due to this error: ${JSON.stringify(ex)}`);
+            return null;
+        }
+    }
+    if ((0, StringComparison_1.isEqual)(inputObject.kind, kubernetesconstants_1.KubernetesWorkload.pod, StringComparison_1.StringComparer.OrdinalIgnoreCase)) {
+        return inputObject.spec.imagePullSecrets;
+    }
+    if (!!inputObject.spec.template && !!inputObject.spec.template.spec) {
+        return inputObject.spec.template.spec.imagePullSecrets;
+    }
+    return null;
+}
+function setImagePullSecrets(inputObject, newImagePullSecrets) {
+    if (!inputObject || !inputObject.spec || !newImagePullSecrets) {
+        return;
+    }
+    if ((0, StringComparison_1.isEqual)(inputObject.kind, kubernetesconstants_1.KubernetesWorkload.pod, StringComparison_1.StringComparer.OrdinalIgnoreCase)) {
+        inputObject.spec.imagePullSecrets = newImagePullSecrets;
+        return;
+    }
+    if ((0, StringComparison_1.isEqual)(inputObject.kind, kubernetesconstants_1.KubernetesWorkload.cronjob, StringComparison_1.StringComparer.OrdinalIgnoreCase)) {
+        try {
+            inputObject.spec.jobTemplate.spec.template.spec.imagePullSecrets = newImagePullSecrets;
+        }
+        catch (ex) {
+            tl.debug(`Overriding imagePullSecrets failed due to this error: ${JSON.stringify(ex)}`);
+            //Do nothing
+        }
+        return;
+    }
+    if (!!inputObject.spec.template && !!inputObject.spec.template.spec) {
+        inputObject.spec.template.spec.imagePullSecrets = newImagePullSecrets;
+        return;
+    }
+    return;
+}
+function updateImageDetails(inputObject, containers) {
+    if (!inputObject || !inputObject.spec || !containers) {
+        return;
+    }
+    if (inputObject.spec.template && !!inputObject.spec.template.spec) {
+        if (inputObject.spec.template.spec.containers) {
+            updateContainers(inputObject.spec.template.spec.containers, containers);
+        }
+        if (inputObject.spec.template.spec.initContainers) {
+            updateContainers(inputObject.spec.template.spec.initContainers, containers);
+        }
+        return;
+    }
+    if (inputObject.spec.jobTemplate && inputObject.spec.jobTemplate.spec && inputObject.spec.jobTemplate.spec.template && inputObject.spec.jobTemplate.spec.template.spec) {
+        if (inputObject.spec.jobTemplate.spec.template.spec.containers) {
+            updateContainers(inputObject.spec.jobTemplate.spec.template.spec.containers, containers);
+        }
+        if (inputObject.spec.jobTemplate.spec.template.spec.initContainers) {
+            updateContainers(inputObject.spec.jobTemplate.spec.template.spec.initContainers, containers);
+        }
+        return;
+    }
+    if (inputObject.spec.containers) {
+        updateContainers(inputObject.spec.containers, containers);
+    }
+    if (inputObject.spec.initContainers) {
+        updateContainers(inputObject.spec.initContainers, containers);
+    }
+}
+exports.updateImageDetails = updateImageDetails;
+function extractImageName(imageName) {
+    let img = '';
+    if (imageName.indexOf('/') > 0) {
+        const registry = imageName.substring(0, imageName.indexOf('/'));
+        const imgName = imageName.substring(imageName.indexOf('/') + 1).split(':')[0];
+        img = `${registry}/${imgName}`;
+    }
+    else {
+        img = imageName.split(':')[0];
+    }
+    return img.split('@sha256')[0];
+}
+function updateContainers(containers, images) {
+    if (!containers || containers.length === 0) {
+        return containers;
+    }
+    containers.forEach((container) => {
+        const imageName = extractImageName(container.image.trim());
+        images.forEach(image => {
+            if (extractImageName(image) === imageName) {
+                container.image = image;
+            }
+        });
+    });
+}
+function setSpecLabels(inputObject, newLabels) {
+    let specLabels = getSpecLabels(inputObject);
+    if (!!newLabels) {
+        specLabels = newLabels;
+    }
+}
+function getSpecSelectorLabels(inputObject) {
+    if (!!inputObject && !!inputObject.spec && !!inputObject.spec.selector) {
+        if (isServiceEntity(inputObject.kind)) {
+            return inputObject.spec.selector;
+        }
+        else {
+            return inputObject.spec.selector.matchLabels;
+        }
+    }
+    return null;
+}
+function setSpecSelectorLabels(inputObject, newLabels) {
+    let selectorLabels = getSpecSelectorLabels(inputObject);
+    if (!!selectorLabels) {
+        selectorLabels = newLabels;
+    }
+}
