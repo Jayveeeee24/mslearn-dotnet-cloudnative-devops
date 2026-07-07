@@ -5,11 +5,12 @@ az login --use-device-code
 
 # List all locations and code
 az account list-locations -o table
+
 # To get all the available regions applicable
 Azure Portal > Policy > Assignments > Allowed resource deployment regions 
 
 # To make a variable-like for use later
-export LOCATION=japaneast
+export LOCATION=southeastasia
 export RESOURCE_GROUP=rg-eshop
 export CLUSTER_NAME=aks-eshop
 export ACR_NAME=acseshop$SRANDOM
@@ -22,7 +23,7 @@ az acr create --resource-group $RESOURCE_GROUP --name $ACR_NAME --sku Basic
 az acr login --name $ACR_NAME
 
 
-# To create alias for local image to push
+# To create alias for local image to push in acr
 docker tag store $ACR_NAME.azurecr.io/storeimage:v1
 docker tag products $ACR_NAME.azurecr.io/productservice:v1
 
